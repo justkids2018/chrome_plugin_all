@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>今日任务管理器</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 400px;
+      min-height: 500px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+    }
+    
+    .container {
+      padding: 20px;
+    }
+    
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 20px;
+    }
+    
+    .header h1 {
+      font-size: 24px;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    
+    .date-info {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    /* 进度条样式 */
+    .progress-section {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    
+    .progress-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .progress-percentage {
+      font-size: 24px;
+      font-weight: 700;
+      color: #667eea;
+    }
+    
+    .progress-bar-container {
+      width: 100%;
+      height: 20px;
+      background: #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      border-radius: 10px;
+      transition: width 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .progress-bar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: shimmer 2s infinite;
+    }
+    
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #f0f0f0;
+    }
+    
+    .stat-item {
+      text-align: center;
+    }
+    
+    .stat-number {
+      font-size: 20px;
+      font-weight: 700;
+      color: #667eea;
+      display: block;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+    }
+    
+    /* 任务输入区域 */
+    .input-section {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .task-input {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+    
+    .task-input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    .time-input {
+      width: 100px;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      text-align: center;
+    }
+    
+    .add-btn {
+      padding: 12px 20px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .add-btn:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+    }
+    
+    .settings-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: #555;
+    }
+    
+    .settings-group input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #667eea;
+    }
+    
+    /* 任务列表 */
+    .tasks-section {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .task-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    
+    .task-item {
+      display: flex;
+      align-items: center;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      transition: all 0.3s;
+      position: relative;
+    }
+    
+    .task-item:hover {
+      background: #f8f9ff;
+      transform: translateX(5px);
+    }
+    
+    .task-item.completed {
+      opacity: 0.6;
+    }
+    
+    .task-item.completed .task-text {
+      text-decoration: line-through;
+      color: #888;
+    }
+    
+    .task-checkbox {
+      width: 20px;
+      height: 20px;
+      margin-right: 15px;
+      accent-color: #667eea;
+      cursor: pointer;
+    }
+    
+    .task-content {
+      flex: 1;
+    }
+    
+    .task-text {
+      font-size: 15px;
+      color: #333;
+      margin-bottom: 5px;
+    }
+    
+    .task-time {
+      font-size: 12px;
+      color: #888;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .task-time.overdue {
+      color: #e74c3c;
+      font-weight: 600;
+    }
+    
+    .task-actions {
+      display: flex;
+      gap: 5px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .task-item:hover .task-actions {
+      opacity: 1;
+    }
+    
+    .action-btn {
+      padding: 6px 10px;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .delete-btn {
+      background: #e74c3c;
+      color: white;
+    }
+    
+    .delete-btn:hover {
+      background: #c0392b;
+    }
+    
+    /* 空状态 */
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+    }
+    
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+    
+    .empty-text {
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    
+    .empty-subtext {
+      font-size: 14px;
+      opacity: 0.7;
+    }
+    
+    /* 清空按钮 */
+    .clear-completed {
+      width: 100%;
+      padding: 12px;
+      margin-top: 15px;
+      background: #f0f0f0;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .clear-completed:hover {
+      background: #e0e0e0;
+      color: #333;
+    }
+    
+    /* 滚动条样式 */
+    .task-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .task-list::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+    
+    .task-list::-webkit-scrollbar-thumb {
+      background: #667eea;
+      border-radius: 3px;
+    }
+    
+    .task-list::-webkit-scrollbar-thumb:hover {
+      background: #5568d3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 头部 -->
+    <div class="header">
+      <h1>📋 今日任务管理器</h1>
+      <div class="date-info" id="dateDisplay"></div>
+    </div>
+    
+    <!-- 进度条区域 -->
+    <div class="progress-section">
+      <div class="progress-header">
+        <div class="progress-title">今日完成进度</div>
+        <div class="progress-percentage" id="progressPercentage">0%</div>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+      </div>
+      <div class="stats">
+        <div class="stat-item">
+          <span class="stat-number" id="totalTasks">0</span>
+          <span class="stat-label">总任务</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number" id="completedTasks">0</span>
+          <span class="stat-label">已完成</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number" id="remainingTasks">0</span>
+          <span class="stat-label">待完成</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 任务输入区域 -->
+    <div class="input-section">
+      <div class="input-group">
+        <input type="text" class="task-input" id="taskInput" placeholder="输入今日任务..." maxlength="100">
+        <input type="time" class="time-input" id="timeInput">
+        <button class="add-btn" id="addBtn">添加</button>
+      </div>
+      <div class="settings-group">
+        <input type="checkbox" id="autoReminder">
+        <label for="autoReminder">开启每小时提醒</label>
+      </div>
+    </div>
+    
+    <!-- 任务列表 -->
+    <div class="tasks-section">
+      <div class="section-title">
+        🎯 今日任务列表
+      </div>
+      <div class="task-list" id="taskList">
+        <div class="empty-state">
+          <div class="empty-icon">📝</div>
+          <div class="empty-text">暂无任务</div>
+          <div class="empty-subtext">添加你的第一个今日任务吧！</div>
+        </div>
+      </div>
+      <button class="clear-completed" id="clearCompleted" style="display: none;">
+        清除已完成任务
+      </button>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
