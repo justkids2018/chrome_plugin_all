@@ -13,6 +13,7 @@ class MarkdownConverter {
     document.getElementById('convertBtn').addEventListener('click', () => this.convertToMarkdown());
     document.getElementById('copyBtn').addEventListener('click', () => this.copyToClipboard());
     document.getElementById('downloadBtn').addEventListener('click', () => this.downloadMarkdown());
+    document.getElementById('notebookLMBtn').addEventListener('click', () => this.openInNotebookLM());
     
     // Auto-save options
     ['includeTitle', 'includeUrl', 'includeMeta', 'filterAds', 'contentSelector'].forEach(id => {
@@ -165,6 +166,33 @@ class MarkdownConverter {
     setTimeout(() => {
       status.style.display = 'none';
     }, 3000);
+  }
+  
+  async openInNotebookLM() {
+    try {
+      // 获取当前活动标签页
+      const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
+      const currentUrl = tab.url;
+      
+      if (!currentUrl) {
+        this.showStatus('Unable to get current page URL', 'error');
+        return;
+      }
+      
+      // 构建 NotebookLM URL，将当前页面URL作为参数传递
+      const notebookLMUrl = `https://notebooklm.google.com/?url=${encodeURIComponent(currentUrl)}`;
+      
+      // 在新标签页中打开 NotebookLM
+      await chrome.tabs.create({
+        url: notebookLMUrl,
+        active: true
+      });
+      
+      this.showStatus('Opened in NotebookLM!', 'success');
+    } catch (error) {
+      console.error('Error opening NotebookLM:', error);
+      this.showStatus(`Error opening NotebookLM: ${error.message}`, 'error');
+    }
   }
 }
 
