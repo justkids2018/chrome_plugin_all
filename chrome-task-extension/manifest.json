@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "每日计划表",
+  "version": "1.0.0",
+  "description": "简洁优美的每日工作生活计划表，苹果风格设计",
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "action": {
+    "default_title": "打开每日计划表"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "permissions": ["sidePanel", "storage"]
+}

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日计划表</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 600px;
+            min-height: 400px;
+            max-height: 600px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .header {
+            margin-bottom: 20px;
+        }
+
+        .greeting {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 6px;
+        }
+
+        .time-display {
+            font-size: 0.85em;
+            color: #999;
+        }
+
+        .cards-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid #f0f0f0;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .card-icon {
+            font-size: 1.2em;
+        }
+
+        .card-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .time-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #f8f8f8;
+        }
+
+        .time-item:last-child {
+            border-bottom: none;
+        }
+
+        .time {
+            display: inline-block;
+            font-size: 0.8em;
+            color: #666;
+            font-weight: 600;
+            margin-right: 8px;
+            min-width: 80px;
+        }
+
+        .activity {
+            color: #333;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .activity a {
+            color: #5856d6;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .activity a:hover {
+            text-decoration: underline;
+        }
+
+        /* 不同时间段的强调色 */
+        .card.morning .card-header {
+            background: linear-gradient(135deg, #fff5e6 0%, #ffffff 100%);
+            margin: -16px -16px 12px -16px;
+            padding: 16px 16px 10px 16px;
+            border-radius: 12px 12px 0 0;
+            border-bottom: 2px solid #ffe6cc;
+        }
+
+        .card.noon .card-header {
+            background: linear-gradient(135deg, #e6f7ff 0%, #ffffff 100%);
+            margin: -16px -16px 12px -16px;
+            padding: 16px 16px 10px 16px;
+            border-radius: 12px 12px 0 0;
+            border-bottom: 2px solid #cce7ff;
+        }
+
+        .card.afternoon .card-header {
+            background: linear-gradient(135deg, #fff0f6 0%, #ffffff 100%);
+            margin: -16px -16px 12px -16px;
+            padding: 16px 16px 10px 16px;
+            border-radius: 12px 12px 0 0;
+            border-bottom: 2px solid #ffcce0;
+        }
+
+        .card.evening .card-header {
+            background: linear-gradient(135deg, #f0e6ff 0%, #ffffff 100%);
+            margin: -16px -16px 12px -16px;
+            padding: 16px 16px 10px 16px;
+            border-radius: 12px 12px 0 0;
+            border-bottom: 2px solid #e0ccff;
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f0f0f0;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="greeting">你好，今天加油！💪</div>
+        <div class="time-display" id="currentTime"></div>
+    </div>
+
+    <div class="cards-container">
+        <!-- 早上 & 上午 -->
+        <div class="card morning">
+            <div class="card-header">
+                <span class="card-icon">🌅</span>
+                <span class="card-title">早上 & 上午</span>
+            </div>
+            <div class="card-content">
+                <div class="time-item">
+                    <span class="time">06:00</span>
+                    <span class="activity">起床、锻炼</span>
+                </div>
+                <div class="time-item">
+                    <span class="time">07:00</span>
+                    <span class="activity">读 <a href="https://www.bilibili.com/video/BV1qbenzXE32/?spm_id_from=333.337.search-card.all.click" target="_blank">Englishposcod</a>（每天一片）</span>
+                </div>
+                <div class="time-item">
+                    <span class="time">08:40 - 09:30</span>
+                    <span class="activity">10个单词和 Englishposcod</span>
+                </div>
+                <div class="time-item">
+                    <span class="time">10:00 - 10:30</span>
+                    <span class="activity">(周一) AI论文、邮件英文</span>
+                </div>
+                <div class="time-item">
+                    <span class="time">10:30 - 11:30</span>
+                    <span class="activity">工作任务拆解、开发任务</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中午 -->
+        <div class="card noon">
+            <div class="card-header">
+                <span class="card-icon">🌤️</span>
+                <span class="card-title">中午</span>
+            </div>
+            <div class="card-content">
+                <div class="time-item">
+                    <span class="time">12:30 - 13:30</span>
+                    <span class="activity">读书</span>
+                </div>
+                <div class="time-item">
+                    <span class="time">13:30 - 14:00</span>
+                    <span class="activity">看 X (30分钟)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 下午 -->
+        <div class="card afternoon">
+            <div class="card-header">
+                <span class="card-icon">☀️</span>
+                <span class="card-title">下午</span>
+            </div>
+            <div class="card-content">
+                <div class="time-item">
+                    <span class="time">14:00 - 16:10</span>
+                    <span class="activity">工作</span>
+                </div>
+                <div class="time-item">
+                    <span class="time">16:30 - 17:20</span>
+                    <span class="activity">接小朋友</span>
+                </div>
+                <div class="time-item">
+                    <span class="time">17:30 - 18:30</span>
+                    <span class="activity">工作</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 晚上 -->
+        <div class="card evening">
+            <div class="card-header">
+                <span class="card-icon">🌙</span>
+                <span class="card-title">晚上</span>
+            </div>
+            <div class="card-content">
+                <div class="time-item">
+                    <span class="time">19:30 - 21:00</span>
+                    <span class="activity">陪孩子读书和学习</span>
+                </div>
+                <div class="time-item">
+                    <span class="time">21:00 - 23:30</span>
+                    <span class="activity">kik项目</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="newtab.js"></script>
+</body>
+</html>

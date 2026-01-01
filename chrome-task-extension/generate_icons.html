@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生成图标</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        .canvas-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        .canvas-wrapper {
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        canvas {
+            display: block;
+            border: 1px solid #ddd;
+        }
+        button {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        .info {
+            margin-top: 20px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .success {
+            color: #4ade80;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📦 生成 Chrome 插件图标</h1>
+        <p>点击下面的按钮自动生成并下载图标文件</p>
+
+        <div class="canvas-container">
+            <div class="canvas-wrapper">
+                <canvas id="canvas16" width="16" height="16"></canvas>
+                <p>16x16</p>
+            </div>
+            <div class="canvas-wrapper">
+                <canvas id="canvas48" width="48" height="48"></canvas>
+                <p>48x48</p>
+            </div>
+            <div class="canvas-wrapper">
+                <canvas id="canvas128" width="128" height="128"></canvas>
+                <p>128x128</p>
+            </div>
+        </div>
+
+        <button onclick="generateAllIcons()">生成全部图标</button>
+        <div id="status" class="info"></div>
+
+        <div class="info">
+            <p>生成后的图标会自动下载到你的下载文件夹</p>
+            <p>请将它们移动到 chrome-extension 文件夹中</p>
+        </div>
+    </div>
+
+    <script>
+        function drawIcon(canvas) {
+            const ctx = canvas.getContext('2d');
+            const size = canvas.width;
+
+            // 创建渐变背景
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(0.5, '#764ba2');
+            gradient.addColorStop(1, '#f093fb');
+
+            // 绘制渐变背景
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+
+            // 绘制圆角矩形日历
+            const padding = size / 8;
+            const calendarSize = size - padding * 2;
+            const calendarX = padding;
+            const calendarY = padding;
+            const cornerRadius = size / 8;
+
+            // 白色背景
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            roundRect(ctx, calendarX, calendarY, calendarSize, calendarSize, cornerRadius);
+            ctx.fill();
+
+            // 日历顶部（紫色条）
+            const headerHeight = calendarSize / 4;
+            ctx.fillStyle = '#667eea';
+            roundRect(ctx, calendarX, calendarY, calendarSize, headerHeight, cornerRadius);
+            ctx.fill();
+            // 填充底部，使其不是圆角
+            ctx.fillRect(calendarX, calendarY + headerHeight - cornerRadius, calendarSize, cornerRadius);
+
+            // 绘制日历网格线
+            ctx.strokeStyle = '#764ba2';
+            ctx.lineWidth = Math.max(1, size / 32);
+
+            // 横线
+            for (let i = 1; i < 4; i++) {
+                const y = calendarY + headerHeight + (calendarSize - headerHeight) * i / 4;
+                ctx.beginPath();
+                ctx.moveTo(calendarX + padding / 2, y);
+                ctx.lineTo(calendarX + calendarSize - padding / 2, y);
+                ctx.stroke();
+            }
+
+            // 绘制对勾
+            const checkSize = calendarSize / 3;
+            const checkX = calendarX + calendarSize / 2 - checkSize / 4;
+            const checkY = calendarY + headerHeight + calendarSize / 5;
+
+            ctx.strokeStyle = '#f093fb';
+            ctx.lineWidth = Math.max(2, size / 20);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            ctx.beginPath();
+            ctx.moveTo(checkX, checkY + checkSize / 2);
+            ctx.lineTo(checkX + checkSize / 3, checkY + checkSize);
+            ctx.lineTo(checkX + checkSize, checkY);
+            ctx.stroke();
+        }
+
+        function roundRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        function downloadCanvas(canvas, filename) {
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.download = filename;
+                link.href = url;
+                link.click();
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        function generateAllIcons() {
+            const sizes = [16, 48, 128];
+            const status = document.getElementById('status');
+
+            sizes.forEach((size, index) => {
+                const canvas = document.getElementById(`canvas${size}`);
+                drawIcon(canvas);
+
+                setTimeout(() => {
+                    downloadCanvas(canvas, `icon${size}.png`);
+                    if (index === sizes.length - 1) {
+                        status.innerHTML = '<p class="success">✓ 所有图标已生成并开始下载！</p><p>请将下载的图标文件移动到 chrome-extension 文件夹中</p>';
+                    }
+                }, index * 200);
+            });
+        }
+
+        // 页面加载时绘制预览
+        window.addEventListener('load', () => {
+            drawIcon(document.getElementById('canvas16'));
+            drawIcon(document.getElementById('canvas48'));
+            drawIcon(document.getElementById('canvas128'));
+        });
+    </script>
+</body>
+</html>

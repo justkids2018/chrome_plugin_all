@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>测试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 40px;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+        }
+        h1 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>✅ 扩展加载成功！</h1>
+    <p>如果你能看到这个页面，说明扩展工作正常。</p>
+    <p id="time"></p>
+    <script>
+        setInterval(() => {
+            document.getElementById('time').textContent = new Date().toLocaleString('zh-CN');
+        }, 1000);
+    </script>
+</body>
+</html>

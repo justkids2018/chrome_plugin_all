@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日计划表</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100%;
+            min-width: 320px;
+            max-width: 380px;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+            background: #f8f9fa;
+            padding: 16px 12px;
+            overflow-y: auto;
+        }
+
+        .header {
+            margin-bottom: 14px;
+        }
+
+        /* 整合的倒计时卡片 */
+        .countdown-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            border: 0.5px solid rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+            margin-bottom: 14px;
+        }
+
+        .daily-quote {
+            font-size: 0.9em;
+            color: #34c759;
+            font-style: italic;
+            line-height: 1.5;
+            padding: 16px 18px;
+            background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+            border-bottom: 0.5px solid rgba(52, 199, 89, 0.15);
+            font-weight: 500;
+            position: relative;
+            padding-left: 44px;
+        }
+
+        .daily-quote::before {
+            content: '"';
+            position: absolute;
+            left: 16px;
+            top: 12px;
+            font-size: 2em;
+            color: #34c759;
+            font-weight: 700;
+            line-height: 1;
+            font-family: Georgia, serif;
+        }
+
+        .countdown-section {
+            padding: 18px 18px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            position: relative;
+        }
+
+        .countdown-circle {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            flex-shrink: 0;
+        }
+
+        .countdown-circle svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .countdown-circle-bg {
+            fill: none;
+            stroke: #f5f5f7;
+            stroke-width: 4;
+        }
+
+        .countdown-circle-progress {
+            fill: none;
+            stroke: #34c759;
+            stroke-width: 4;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+
+        .countdown-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .countdown-number {
+            font-size: 2.4em;
+            font-weight: 600;
+            line-height: 1;
+            color: #1d1d1f;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            letter-spacing: -1.5px;
+        }
+
+        .countdown-text {
+            font-size: 0.65em;
+            color: #86868b;
+            margin-top: 3px;
+            font-weight: 500;
+        }
+
+        .countdown-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .countdown-title {
+            font-size: 1.15em;
+            color: #1d1d1f;
+            font-weight: 600;
+            letter-spacing: -0.4px;
+        }
+
+        .countdown-subtitle {
+            font-size: 0.8em;
+            color: #86868b;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .time-display {
+            font-size: 0.75em;
+            color: #86868b;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        .schedule-header {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 12px;
+        }
+
+        .edit-btn {
+            background: #f5f5f7;
+            color: #1d1d1f;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-size: 0.85em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .edit-btn:hover {
+            background: #e8e8ed;
+            transform: translateY(-1px);
+        }
+
+        .edit-btn.save-mode {
+            background: #34c759;
+            color: white;
+        }
+
+        .edit-btn.save-mode:hover {
+            background: #30b350;
+        }
+
+        /* 番茄钟倒计时样式 - Apple 设计风格 */
+        .pomodoro-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 14px;
+            padding: 12px 16px;
+            margin-bottom: 14px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            border: 0.5px solid rgba(0, 0, 0, 0.06);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+        }
+
+        .pomodoro-time {
+            font-size: 1.6em;
+            font-weight: 600;
+            color: #1d1d1f;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+            letter-spacing: -0.5px;
+            flex-shrink: 0;
+            font-variant-numeric: tabular-nums;
+            min-width: 90px;
+        }
+
+        .pomodoro-time.running {
+            color: #34c759;
+        }
+
+        .pomodoro-time.break {
+            color: #ff9f0a;
+        }
+
+        .pomodoro-controls {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .pomodoro-btn {
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            border: none;
+            border-radius: 50%;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #f5f5f7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1d1d1f;
+        }
+
+        .pomodoro-btn:hover {
+            background: #e8e8ed;
+            transform: scale(1.08);
+        }
+
+        .pomodoro-btn:active {
+            transform: scale(0.96);
+        }
+
+        .pomodoro-btn.start {
+            background: #34c759;
+            color: white;
+        }
+
+        .pomodoro-btn.start:hover {
+            background: #30b350;
+        }
+
+        .pomodoro-btn.pause {
+            background: #ff9f0a;
+            color: white;
+        }
+
+        .pomodoro-btn.pause:hover {
+            background: #f08c00;
+        }
+
+        .pomodoro-presets {
+            display: flex;
+            gap: 4px;
+            margin-left: auto;
+            flex-shrink: 0;
+            background: #f5f5f7;
+            padding: 3px;
+            border-radius: 8px;
+        }
+
+        .preset-btn {
+            background: transparent;
+            color: #86868b;
+            border: none;
+            border-radius: 6px;
+            padding: 5px 11px;
+            font-size: 0.8em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 36px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+        }
+
+        .preset-btn:hover {
+            color: #1d1d1f;
+        }
+
+        .preset-btn.active {
+            background: white;
+            color: #1d1d1f;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .pomodoro-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: rgba(0, 0, 0, 0.06);
+            border-radius: 0 0 14px 14px;
+            overflow: hidden;
+        }
+
+        .pomodoro-progress-bar {
+            height: 100%;
+            background: #34c759;
+            border-radius: 0 0 14px 14px;
+            width: 0%;
+            transition: width 1s linear;
+        }
+
+        .pomodoro-progress-bar.break {
+            background: #ff9f0a;
+        }
+
+        .tabs-nav {
+            display: flex;
+            gap: 0;
+            margin-bottom: 14px;
+            background: #f5f5f7;
+            padding: 2px;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            color: #86868b;
+            font-size: 0.9em;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+        }
+
+        .tab-btn:hover {
+            color: #1d1d1f;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: #1d1d1f;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .today-tasks {
+            background: white;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border: 1px solid #f0f0f0;
+        }
+
+        .today-tasks-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .today-tasks-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .today-task-item {
+            background: #f8f9fa;
+            padding: 10px 12px;
+            margin: 6px 0;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+            transition: all 0.2s ease;
+        }
+
+        .today-task-item:hover {
+            background: #f0f1f3;
+            transform: translateX(2px);
+        }
+
+        .today-task-time {
+            font-size: 0.85em;
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .today-task-content {
+            color: #555;
+            font-size: 0.95em;
+            line-height: 1.4;
+        }
+
+        .no-tasks {
+            text-align: center;
+            color: #999;
+            font-size: 0.9em;
+            padding: 16px;
+            opacity: 0.8;
+        }
+
+        .cards-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 14px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+            border: 1px solid #f0f0f0;
+            transition: all 0.2s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .card-icon {
+            font-size: 1.3em;
+        }
+
+        .card-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .time-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #f8f8f8;
+            transition: all 0.2s ease;
+        }
+
+        .time-item:last-child {
+            border-bottom: none;
+        }
+
+        .time-item.active {
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.08) 0%, rgba(102, 126, 234, 0.03) 100%);
+            padding: 10px 12px;
+            margin: 4px -12px;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+            border-bottom: none;
+        }
+
+        .time {
+            display: block;
+            font-size: 0.9em;
+            color: #666;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .time-item.active .time {
+            color: #667eea;
+        }
+
+        .activity {
+            color: #555;
+            font-size: 1em;
+            line-height: 1.5;
+        }
+
+        .time-item.active .activity {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .activity a {
+            color: #5856d6;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .activity a:hover {
+            text-decoration: underline;
+        }
+
+        /* 编辑模式样式 */
+        .time-item.editing {
+            background: #f8f9fa;
+            padding: 12px;
+            margin: 4px 0;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .time-item.editing .time-inputs {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            width: 100%;
+        }
+
+        .time-item.editing input[type="time"] {
+            border: 1px solid #667eea;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: white;
+            outline: none;
+            font-size: 0.85em;
+            font-family: inherit;
+            color: #333;
+        }
+
+        .time-item.editing input[type="time"]:focus {
+            border-color: #4745b8;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        }
+
+        .time-separator {
+            color: #999;
+            font-weight: 600;
+        }
+
+        .time-item.editing .activity {
+            border: 1px solid #5856d6;
+            padding: 8px 10px;
+            border-radius: 4px;
+            background: white;
+            outline: none;
+            cursor: text;
+            width: 100%;
+            font-size: 0.95em;
+        }
+
+        .time-item.editing .activity:focus {
+            border-color: #4745b8;
+            box-shadow: 0 0 0 2px rgba(88, 86, 214, 0.1);
+        }
+
+        .delete-btn {
+            background: #ff3b30;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 0.85em;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.3s ease;
+            align-self: flex-end;
+        }
+
+        .time-item.editing:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .delete-btn:hover {
+            background: #d32f2f;
+        }
+
+        /* 链接编辑容器样式 */
+        .link-edit-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .link-edit-container .activity-text {
+            border: 1px solid #5856d6;
+            padding: 8px 10px;
+            border-radius: 4px;
+            background: white;
+            outline: none;
+            width: 100%;
+            font-size: 0.95em;
+            font-family: inherit;
+        }
+
+        .link-edit-container .activity-text:focus {
+            border-color: #4745b8;
+            box-shadow: 0 0 0 2px rgba(88, 86, 214, 0.1);
+        }
+
+        .link-edit-fields {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .link-label {
+            font-size: 0.85em;
+            color: #666;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .link-label:first-child {
+            margin-top: 0;
+        }
+
+        .link-text-input,
+        .link-url-input {
+            border: 1px solid #ccc;
+            padding: 6px 8px;
+            border-radius: 4px;
+            background: white;
+            outline: none;
+            font-size: 0.9em;
+            font-family: inherit;
+            width: 100%;
+        }
+
+        .link-text-input:focus,
+        .link-url-input:focus {
+            border-color: #5856d6;
+            box-shadow: 0 0 0 2px rgba(88, 86, 214, 0.1);
+        }
+
+        .link-url-input {
+            color: #5856d6;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85em;
+        }
+
+        .add-task-btn {
+            width: 100%;
+            background: #f0f0f0;
+            color: #666;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .add-task-btn:hover {
+            background: #e8e8e8;
+            border-color: #5856d6;
+            color: #5856d6;
+        }
+
+        .card.editing .add-task-btn {
+            display: block;
+        }
+
+        /* 不同时间段的强调色 - 更简洁的设计 */
+        .card.morning .card-icon {
+            color: #ff9500;
+        }
+
+        .card.noon .card-icon {
+            color: #34c759;
+        }
+
+        .card.afternoon .card-icon {
+            color: #5ac8fa;
+        }
+
+        .card.evening .card-icon {
+            color: #af52de;
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f0f0f0;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+    </style>
+</head>
+<body>
+    <!-- 整合的倒计时和每日一句卡片 -->
+    <div class="countdown-card">
+        <div class="daily-quote" id="dailyQuote">加载中...</div>
+        <div class="countdown-section">
+            <div class="countdown-circle">
+                <svg viewBox="0 0 60 60">
+                    <circle class="countdown-circle-bg" cx="30" cy="30" r="27"></circle>
+                    <circle class="countdown-circle-progress" cx="30" cy="30" r="27"
+                            id="progressCircle"
+                            stroke-dasharray="169.646"
+                            stroke-dashoffset="0"></circle>
+                </svg>
+                <div class="countdown-center">
+                    <div class="countdown-number" id="daysLeft">0</div>
+                </div>
+            </div>
+            <div class="countdown-info">
+                <div class="countdown-title">2025年倒计时</div>
+                <div class="countdown-subtitle">还剩 <span id="daysLeftText">0</span> 天 · 珍惜每一天</div>
+                <div class="time-display" id="currentTime"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 番茄钟倒计时 -->
+    <div class="pomodoro-section">
+        <div class="pomodoro-time" id="pomodoroTime">35:00</div>
+        <div class="pomodoro-controls">
+            <button class="pomodoro-btn start" id="pomodoroStart" title="开始">▶</button>
+            <button class="pomodoro-btn pause" id="pomodoroPause" style="display:none;" title="暂停">⏸</button>
+            <button class="pomodoro-btn reset" id="pomodoroReset" title="重置">↻</button>
+        </div>
+        <div class="pomodoro-presets">
+            <button class="preset-btn" data-minutes="25">25</button>
+            <button class="preset-btn active" data-minutes="35">35</button>
+            <button class="preset-btn" data-minutes="40">40</button>
+        </div>
+        <div class="pomodoro-progress">
+            <div class="pomodoro-progress-bar" id="pomodoroProgress"></div>
+        </div>
+    </div>
+
+    <!-- 导航标签 -->
+    <div class="tabs-nav">
+        <button class="tab-btn active" data-tab="today">📋 今日任务</button>
+        <button class="tab-btn" data-tab="schedule">📅 日程表</button>
+    </div>
+
+    <!-- 今日任务标签页 -->
+    <div class="tab-content active" id="todayTab">
+        <div class="today-tasks">
+            <div class="today-tasks-header">
+                <span style="font-size: 1.3em;">📋</span>
+                <span class="today-tasks-title">今日任务</span>
+            </div>
+            <div id="todayTasksList"></div>
+        </div>
+    </div>
+
+    <!-- 日程表标签页 -->
+    <div class="tab-content" id="scheduleTab">
+        <div class="schedule-header">
+            <button class="edit-btn" id="editBtn">
+                <span>✏️</span>
+                <span id="editBtnText">编辑</span>
+            </button>
+        </div>
+        <div class="cards-container">
+        <!-- 早上 & 上午 -->
+        <div class="card morning">
+            <div class="card-header">
+                <span class="card-icon">🌅</span>
+                <span class="card-title">早上 & 上午</span>
+            </div>
+            <div class="card-content">
+                <div class="time-item" data-start="06:00" data-end="07:00">
+                    <span class="time">06:00</span>
+                    <span class="activity">起床、锻炼</span>
+                </div>
+                <div class="time-item" data-start="07:00" data-end="08:40">
+                    <span class="time">07:00</span>
+                    <span class="activity">读 <a href="https://www.bilibili.com/video/BV1qbenzXE32/?spm_id_from=333.337.search-card.all.click" target="_blank">Englishposcod</a>（每天一片）</span>
+                </div>
+                <div class="time-item" data-start="08:40" data-end="09:30">
+                    <span class="time">08:40 - 09:30</span>
+                    <span class="activity">10个单词和 Englishposcod</span>
+                </div>
+                <div class="time-item" data-start="10:00" data-end="10:30">
+                    <span class="time">10:00 - 10:30</span>
+                    <span class="activity">(周一) AI论文、邮件英文</span>
+                </div>
+                <div class="time-item" data-start="10:30" data-end="11:30">
+                    <span class="time">10:30 - 11:30</span>
+                    <span class="activity">工作任务拆解、开发任务</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中午 -->
+        <div class="card noon">
+            <div class="card-header">
+                <span class="card-icon">🌤️</span>
+                <span class="card-title">中午</span>
+            </div>
+            <div class="card-content">
+                <div class="time-item" data-start="12:30" data-end="13:30">
+                    <span class="time">12:30 - 13:30</span>
+                    <span class="activity">读书</span>
+                </div>
+                <div class="time-item" data-start="13:30" data-end="14:00">
+                    <span class="time">13:30 - 14:00</span>
+                    <span class="activity">看 X (30分钟)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 下午 -->
+        <div class="card afternoon">
+            <div class="card-header">
+                <span class="card-icon">☀️</span>
+                <span class="card-title">下午</span>
+            </div>
+            <div class="card-content">
+                <div class="time-item" data-start="14:00" data-end="16:10">
+                    <span class="time">14:00 - 16:10</span>
+                    <span class="activity">工作</span>
+                </div>
+                <div class="time-item" data-start="16:30" data-end="17:20">
+                    <span class="time">16:30 - 17:20</span>
+                    <span class="activity">接小朋友</span>
+                </div>
+                <div class="time-item" data-start="17:30" data-end="18:30">
+                    <span class="time">17:30 - 18:30</span>
+                    <span class="activity">工作</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 晚上 -->
+        <div class="card evening">
+            <div class="card-header">
+                <span class="card-icon">🌙</span>
+                <span class="card-title">晚上</span>
+            </div>
+            <div class="card-content">
+                <div class="time-item" data-start="19:30" data-end="21:00">
+                    <span class="time">19:30 - 21:00</span>
+                    <span class="activity">陪孩子读书和学习</span>
+                </div>
+                <div class="time-item" data-start="21:00" data-end="23:30">
+                    <span class="time">21:00 - 23:30</span>
+                    <span class="activity">kik项目</span>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <script src="sidepanel.js"></script>
+</body>
+</html>
