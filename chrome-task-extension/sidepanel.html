@@ -108,7 +108,7 @@
         }
 
         .countdown-number {
-            font-size: 2.4em;
+            font-size: 1.8em;
             font-weight: 600;
             line-height: 1;
             color: #1d1d1f;
@@ -427,6 +427,271 @@
             opacity: 0.8;
         }
 
+        /* 添加任务输入框样式 */
+        .add-task-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .add-task-time-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .add-task-input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        #newTaskInput {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.95em;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        #newTaskInput:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        #newTaskTime {
+            flex: 1;
+            padding: 10px 8px;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            background: white;
+            cursor: pointer;
+        }
+
+        #newTaskTime:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        #newTaskEndTime {
+            flex: 1;
+            padding: 10px 8px;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            background: white;
+            cursor: pointer;
+        }
+
+        #newTaskEndTime:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .time-separator-input {
+            color: #999;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .add-task-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: #667eea;
+            color: white;
+            border-radius: 8px;
+            font-size: 1.5em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .add-task-btn:hover {
+            background: #5568d3;
+            transform: scale(1.05);
+        }
+
+        .add-task-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 每日任务列表样式 */
+        .daily-tasks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .daily-task-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px;
+            background: white;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .daily-task-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+        }
+
+        .daily-task-item.completed {
+            opacity: 0.6;
+        }
+
+        .daily-task-item.completed .daily-task-text {
+            text-decoration: line-through;
+            color: #999;
+        }
+
+        .daily-task-item.current {
+            background: linear-gradient(135deg, #fff5e6 0%, #ffffff 100%);
+            border-color: #ff9500;
+        }
+
+        .daily-task-item.overdue {
+            background: linear-gradient(135deg, #ffe6e6 0%, #ffffff 100%);
+            border-color: #ff3b30;
+        }
+
+        .daily-task-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #667eea;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .daily-task-checkbox:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .daily-task-checkbox.checked {
+            background: #667eea;
+        }
+
+        .daily-task-checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .daily-task-content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 0;
+        }
+
+        .daily-task-time {
+            font-size: 0.85em;
+            color: #667eea;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .daily-task-time.editing {
+            border: 1px solid #667eea;
+            border-radius: 4px;
+            padding: 2px 4px;
+            background: white;
+        }
+
+        .daily-task-item.overdue .daily-task-time {
+            color: #ff3b30;
+        }
+
+        .daily-task-item.current .daily-task-time {
+            color: #ff9500;
+        }
+
+        .daily-task-text {
+            color: #333;
+            font-size: 0.95em;
+            line-height: 1.4;
+            word-break: break-word;
+            cursor: text;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+
+        .daily-task-text:hover {
+            background: #f5f5f5;
+        }
+
+        .daily-task-text.editing {
+            background: white;
+            border: 1.5px solid #667eea;
+            outline: none;
+            padding: 3px 7px;
+        }
+
+        .daily-task-edit {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            color: #667eea;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 1em;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            display: none;
+        }
+
+        .daily-task-item:hover .daily-task-edit {
+            display: block;
+        }
+
+        .daily-task-edit:hover {
+            background: #e6e9ff;
+        }
+
+        .daily-task-delete {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            color: #999;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 1.2em;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .daily-task-delete:hover {
+            background: #fee;
+            color: #f44;
+        }
+
+
         .cards-container {
             display: flex;
             flex-direction: column;
@@ -515,6 +780,60 @@
 
         .activity a:hover {
             text-decoration: underline;
+        }
+
+        /* 日程表任务项编辑样式 */
+        .schedule-task-delete {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            color: #999;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 1.2em;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            margin-left: auto;
+            display: none;
+        }
+
+        .time-item:hover .schedule-task-delete {
+            display: block;
+        }
+
+        .schedule-task-delete:hover {
+            background: #fee;
+            color: #f44;
+        }
+
+        .time.editable {
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+
+        .time.editable:hover {
+            background: #f0f0f0;
+        }
+
+        .activity.editable {
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+
+        .activity.editable:hover {
+            background: #f5f5f5;
+        }
+
+        .activity.editing {
+            background: white;
+            border: 1.5px solid #667eea;
+            outline: none;
+            padding: 3px 7px;
         }
 
         /* 编辑模式样式 */
@@ -705,6 +1024,322 @@
             color: #af52de;
         }
 
+        /* 历史任务页面样式 */
+        .history-container {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 14px 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-icon {
+            font-size: 1.8em;
+            flex-shrink: 0;
+        }
+
+        .stat-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .stat-value {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: #1d1d1f;
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            font-size: 0.75em;
+            color: #86868b;
+            margin-top: 2px;
+            font-weight: 500;
+        }
+
+        .time-filter {
+            display: flex;
+            gap: 8px;
+            background: #f5f5f7;
+            padding: 4px;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        }
+
+        .filter-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            color: #86868b;
+            font-size: 0.9em;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+        }
+
+        .filter-btn:hover {
+            color: #1d1d1f;
+        }
+
+        .filter-btn.active {
+            background: white;
+            color: #1d1d1f;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .history-day-card {
+            background: white;
+            border-radius: 12px;
+            padding: 14px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+            border: 1px solid #f0f0f0;
+            transition: all 0.2s ease;
+        }
+
+        .history-day-card:hover {
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .history-day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .history-date {
+            font-size: 1em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .history-date.today {
+            color: #34c759;
+        }
+
+        .history-date.yesterday {
+            color: #ff9500;
+        }
+
+        .history-completion {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .completion-text {
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .completion-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 700;
+        }
+
+        .completion-badge.high {
+            background: linear-gradient(135deg, #34c759 0%, #28a745 100%);
+        }
+
+        .completion-badge.medium {
+            background: linear-gradient(135deg, #ff9500 0%, #ff6b00 100%);
+        }
+
+        .completion-badge.low {
+            background: linear-gradient(135deg, #ff3b30 0%, #dc2626 100%);
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 3px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .progress-bar-fill.high {
+            background: linear-gradient(90deg, #34c759 0%, #28a745 100%);
+        }
+
+        .progress-bar-fill.medium {
+            background: linear-gradient(90deg, #ff9500 0%, #ff6b00 100%);
+        }
+
+        .progress-bar-fill.low {
+            background: linear-gradient(90deg, #ff3b30 0%, #dc2626 100%);
+        }
+
+        .history-tasks-summary {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .task-count {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .task-count-icon {
+            font-size: 1.1em;
+        }
+
+        .history-tasks-detail {
+            margin-top: 10px;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+
+        .history-day-card.expanded .history-tasks-detail {
+            display: block;
+        }
+
+        .history-task-item {
+            padding: 8px 10px;
+            margin: 4px 0;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .history-task-item.completed {
+            opacity: 0.7;
+            border-left-color: #34c759;
+        }
+
+        .history-task-item.completed .history-task-text {
+            text-decoration: line-through;
+            color: #999;
+        }
+
+        .history-task-checkbox {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+        }
+
+        .history-task-checkbox.completed {
+            background: #34c759;
+            color: white;
+        }
+
+        .history-task-checkbox.completed::after {
+            content: '✓';
+        }
+
+        .history-task-checkbox:not(.completed) {
+            border: 2px solid #ddd;
+        }
+
+        .history-task-time {
+            font-size: 0.85em;
+            color: #667eea;
+            font-weight: 600;
+            min-width: 80px;
+        }
+
+        .history-task-text {
+            flex: 1;
+            color: #555;
+        }
+
+        .expand-btn {
+            background: transparent;
+            border: none;
+            color: #667eea;
+            font-size: 0.85em;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            margin-top: 8px;
+        }
+
+        .expand-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .no-history {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .no-history-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         /* 滚动条样式 */
         ::-webkit-scrollbar {
             width: 6px;
@@ -742,7 +1377,7 @@
                 </div>
             </div>
             <div class="countdown-info">
-                <div class="countdown-title">2025年倒计时</div>
+                <div class="countdown-title" id="countdownYear">2025年倒计时</div>
                 <div class="countdown-subtitle">还剩 <span id="daysLeftText">0</span> 天 · 珍惜每一天</div>
                 <div class="time-display" id="currentTime"></div>
             </div>
@@ -771,27 +1406,37 @@
     <div class="tabs-nav">
         <button class="tab-btn active" data-tab="today">📋 今日任务</button>
         <button class="tab-btn" data-tab="schedule">📅 日程表</button>
+        <button class="tab-btn" data-tab="history">📊 历史任务</button>
     </div>
 
     <!-- 今日任务标签页 -->
     <div class="tab-content active" id="todayTab">
         <div class="today-tasks">
             <div class="today-tasks-header">
-                <span style="font-size: 1.3em;">📋</span>
-                <span class="today-tasks-title">今日任务</span>
+                <span style="font-size: 1.1em;">📋</span>
+                <span class="today-tasks-title">每日任务</span>
             </div>
-            <div id="todayTasksList"></div>
+            <!-- 添加任务输入框 -->
+            <div class="add-task-container">
+                <!-- 第一行：时间选择 -->
+                <div class="add-task-time-row">
+                    <input type="time" id="newTaskTime" placeholder="开始时间" />
+                    <span class="time-separator-input">-</span>
+                    <input type="time" id="newTaskEndTime" placeholder="结束时间" />
+                </div>
+                <!-- 第二行：任务输入和添加按钮 -->
+                <div class="add-task-input-row">
+                    <input type="text" id="newTaskInput" placeholder="添加新任务..." />
+                    <button id="addTaskBtn" class="add-task-btn">+</button>
+                </div>
+            </div>
+            <!-- 待办事项列表 -->
+            <div id="dailyTasksList" class="daily-tasks-list"></div>
         </div>
     </div>
 
     <!-- 日程表标签页 -->
     <div class="tab-content" id="scheduleTab">
-        <div class="schedule-header">
-            <button class="edit-btn" id="editBtn">
-                <span>✏️</span>
-                <span id="editBtnText">编辑</span>
-            </button>
-        </div>
         <div class="cards-container">
         <!-- 早上 & 上午 -->
         <div class="card morning">
@@ -880,6 +1525,46 @@
                 </div>
             </div>
         </div>
+        </div>
+    </div>
+
+    <!-- 历史任务标签页 -->
+    <div class="tab-content" id="historyTab">
+        <div class="history-container">
+            <!-- 统计概览 -->
+            <div class="stats-overview">
+                <div class="stat-card">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="totalDays">0</div>
+                        <div class="stat-label">记录天数</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="totalTasks">0</div>
+                        <div class="stat-label">总任务数</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🎯</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="completedTasks">0</div>
+                        <div class="stat-label">已完成</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 时间维度切换 -->
+            <div class="time-filter">
+                <button class="filter-btn active" data-filter="week">本周</button>
+                <button class="filter-btn" data-filter="month">本月</button>
+                <button class="filter-btn" data-filter="all">全部</button>
+            </div>
+
+            <!-- 历史任务列表 -->
+            <div id="historyList" class="history-list"></div>
         </div>
     </div>
 

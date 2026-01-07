@@ -20,9 +20,6 @@ function updateTime() {
 
     // 更新倒计时（每分钟更新一次就够了）
     updateCountdown();
-
-    // 更新今日任务列表
-    updateTodayTasks();
 }
 
 // 更新年度倒计时
@@ -35,6 +32,12 @@ function updateCountdown() {
     const totalDays = Math.ceil((endOfYear - startOfYear) / (1000 * 60 * 60 * 24));
     const diff = endOfYear - now;
     const daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+    // 更新年份显示
+    const countdownYearElement = document.getElementById('countdownYear');
+    if (countdownYearElement) {
+        countdownYearElement.textContent = `${currentYear}年倒计时`;
+    }
 
     // 更新倒计时数字
     const daysLeftElement = document.getElementById('daysLeft');
@@ -57,71 +60,379 @@ function updateCountdown() {
     }
 }
 
-// 更新今日任务列表
-function updateTodayTasks() {
+// ==================== 每日任务功能 ====================
+
+// 获取今天的日期字符串 (YYYY-MM-DD)
+function getTodayDateString() {
     const now = new Date();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const todayTasksList = document.getElementById('todayTasksList');
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
 
-    if (!todayTasksList) return;
+// 获取今天的存储键名
+function getTodayStorageKey() {
+    return `dailyTasks_${getTodayDateString()}`;
+}
 
-    // 收集所有任务
-    const allTasks = [];
-    document.querySelectorAll('.time-item[data-start]').forEach(item => {
-        const startTime = item.getAttribute('data-start');
-        const endTime = item.getAttribute('data-end');
-        const activityEl = item.querySelector('.activity');
-
-        if (startTime && endTime && activityEl) {
-            const startMinutes = timeToMinutes(startTime);
-            const endMinutes = timeToMinutes(endTime);
-
-            allTasks.push({
-                startTime,
-                endTime,
-                startMinutes,
-                endMinutes,
-                activity: activityEl.textContent,
-                isPast: currentMinutes >= endMinutes,
-                isCurrent: currentMinutes >= startMinutes && currentMinutes < endMinutes,
-                isFuture: currentMinutes < startMinutes
-            });
-        }
+// 加载每日任务
+function loadDailyTasks() {
+    const storageKey = getTodayStorageKey();
+    chrome.storage.local.get([storageKey], (result) => {
+        const tasks = result[storageKey] || [];
+        renderDailyTasks(tasks);
     });
+}
 
-    // 按时间排序
-    allTasks.sort((a, b) => a.startMinutes - b.startMinutes);
+// 渲染每日任务列表
+function renderDailyTasks(tasks) {
+    const dailyTasksList = document.getElementById('dailyTasksList');
+    if (!dailyTasksList) return;
 
-    // 生成任务列表 HTML
-    if (allTasks.length === 0) {
-        todayTasksList.innerHTML = '<div class="no-tasks">暂无任务安排</div>';
+    if (tasks.length === 0) {
+        dailyTasksList.innerHTML = '<div class="no-tasks">暂无任务，点击上方添加新任务</div>';
         return;
     }
 
-    todayTasksList.innerHTML = allTasks.map(task => {
-        const timeText = task.startTime === task.endTime
-            ? task.startTime
-            : `${task.startTime} - ${task.endTime}`;
+    // 按时间排序：有时间的在前，无时间的在后
+    const sortedTasks = [...tasks].sort((a, b) => {
+        if (a.startTime && !b.startTime) return -1;
+        if (!a.startTime && b.startTime) return 1;
+        if (a.startTime && b.startTime) return a.startTime.localeCompare(b.startTime);
+        return a.createdAt - b.createdAt;
+    });
 
-        let statusIcon = '';
-        let opacity = '';
+    // 获取当前时间
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentTimeInMinutes = currentHour * 60 + currentMinute;
 
-        if (task.isPast) {
-            statusIcon = '✅';
-            opacity = 'opacity: 0.5;';
-        } else if (task.isCurrent) {
-            statusIcon = '⏰';
-        } else {
-            statusIcon = '📌';
+    dailyTasksList.innerHTML = sortedTasks.map(task => {
+        let itemClass = 'daily-task-item';
+
+        // 判断任务状态
+        if (task.completed) {
+            itemClass += ' completed';
+        } else if (task.startTime) {
+            const [startHour, startMinute] = task.startTime.split(':').map(Number);
+            const startTimeInMinutes = startHour * 60 + startMinute;
+
+            let endTimeInMinutes = startTimeInMinutes + 60; // 默认1小时
+            if (task.endTime) {
+                const [endHour, endMinute] = task.endTime.split(':').map(Number);
+                endTimeInMinutes = endHour * 60 + endMinute;
+            }
+
+            // 当前时间在任务时间范围内
+            if (currentTimeInMinutes >= startTimeInMinutes && currentTimeInMinutes < endTimeInMinutes) {
+                itemClass += ' current';
+            } else if (currentTimeInMinutes >= endTimeInMinutes) {
+                itemClass += ' overdue';
+            }
+        }
+
+        // 显示时间
+        let timeDisplay = '';
+        if (task.startTime) {
+            if (task.endTime && task.endTime !== task.startTime) {
+                timeDisplay = `<div class="daily-task-time" data-action="edit-time" data-start="${task.startTime}" data-end="${task.endTime}">${task.startTime}-${task.endTime}</div>`;
+            } else {
+                timeDisplay = `<div class="daily-task-time" data-action="edit-time" data-start="${task.startTime}" data-end="">${task.startTime}</div>`;
+            }
         }
 
         return `
-            <div class="today-task-item" style="${opacity}">
-                <div class="today-task-time">${statusIcon} ${timeText}</div>
-                <div class="today-task-content">${task.activity}</div>
+            <div class="${itemClass}" data-task-id="${task.id}">
+                <div class="daily-task-checkbox ${task.completed ? 'checked' : ''}"
+                     data-action="toggle"></div>
+                <div class="daily-task-content-wrapper">
+                    ${timeDisplay}
+                    <div class="daily-task-text"
+                         contenteditable="false"
+                         data-action="edit"
+                         data-original-text="${escapeHtml(task.text)}">${escapeHtml(task.text)}</div>
+                </div>
+                <button class="daily-task-edit" data-action="edit-btn" title="编辑">✎</button>
+                <button class="daily-task-delete" data-action="delete" title="删除">×</button>
             </div>
         `;
     }).join('');
+
+    // 添加事件委托
+    dailyTasksList.querySelectorAll('.daily-task-item').forEach(item => {
+        const taskId = item.getAttribute('data-task-id');
+
+        const checkbox = item.querySelector('[data-action="toggle"]');
+        if (checkbox) {
+            checkbox.addEventListener('click', () => toggleTaskComplete(taskId));
+        }
+
+        const timeEl = item.querySelector('[data-action="edit-time"]');
+        if (timeEl) {
+            timeEl.addEventListener('click', () => {
+                const currentStartTime = timeEl.getAttribute('data-start') || '';
+                const currentEndTime = timeEl.getAttribute('data-end') || '';
+
+                // 创建时间编辑容器
+                const timeEditContainer = document.createElement('div');
+                timeEditContainer.style.display = 'flex';
+                timeEditContainer.style.gap = '4px';
+                timeEditContainer.style.alignItems = 'center';
+                timeEditContainer.className = 'daily-task-time editing';
+
+                const startInput = document.createElement('input');
+                startInput.type = 'time';
+                startInput.value = currentStartTime;
+                startInput.style.width = '70px';
+                startInput.style.fontSize = '0.85em';
+                startInput.style.border = '1px solid #667eea';
+                startInput.style.borderRadius = '4px';
+                startInput.style.padding = '2px 4px';
+
+                const separator = document.createElement('span');
+                separator.textContent = '-';
+                separator.style.color = '#999';
+
+                const endInput = document.createElement('input');
+                endInput.type = 'time';
+                endInput.value = currentEndTime;
+                endInput.style.width = '70px';
+                endInput.style.fontSize = '0.85em';
+                endInput.style.border = '1px solid #667eea';
+                endInput.style.borderRadius = '4px';
+                endInput.style.padding = '2px 4px';
+
+                timeEditContainer.appendChild(startInput);
+                timeEditContainer.appendChild(separator);
+                timeEditContainer.appendChild(endInput);
+
+                const saveTime = () => {
+                    const newStartTime = startInput.value;
+                    const newEndTime = endInput.value;
+                    if (newStartTime && (newStartTime !== currentStartTime || newEndTime !== currentEndTime)) {
+                        updateTaskTime(taskId, newStartTime, newEndTime);
+                    } else {
+                        timeEl.style.display = '';
+                        timeEditContainer.remove();
+                    }
+                };
+
+                startInput.addEventListener('blur', (e) => {
+                    if (!timeEditContainer.contains(e.relatedTarget)) {
+                        setTimeout(saveTime, 100);
+                    }
+                });
+
+                endInput.addEventListener('blur', (e) => {
+                    if (!timeEditContainer.contains(e.relatedTarget)) {
+                        setTimeout(saveTime, 100);
+                    }
+                });
+
+                startInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        endInput.focus();
+                    }
+                    if (e.key === 'Escape') {
+                        timeEl.style.display = '';
+                        timeEditContainer.remove();
+                    }
+                });
+
+                endInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        saveTime();
+                    }
+                    if (e.key === 'Escape') {
+                        timeEl.style.display = '';
+                        timeEditContainer.remove();
+                    }
+                });
+
+                timeEl.style.display = 'none';
+                timeEl.parentNode.insertBefore(timeEditContainer, timeEl);
+                startInput.focus();
+            });
+        }
+
+        const textEl = item.querySelector('[data-action="edit"]');
+        const editBtn = item.querySelector('[data-action="edit-btn"]');
+
+        // 点击编辑按钮或文本进入编辑模式
+        const enableEdit = () => {
+            textEl.contentEditable = 'true';
+            textEl.classList.add('editing');
+            textEl.focus();
+            // 选中所有文本
+            const range = document.createRange();
+            range.selectNodeContents(textEl);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        };
+
+        if (editBtn) {
+            editBtn.addEventListener('click', enableEdit);
+        }
+
+        if (textEl) {
+            textEl.addEventListener('dblclick', enableEdit);
+
+            // 按回车保存
+            textEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    textEl.blur();
+                }
+                if (e.key === 'Escape') {
+                    textEl.textContent = textEl.getAttribute('data-original-text');
+                    textEl.blur();
+                }
+            });
+
+            // 失去焦点时保存
+            textEl.addEventListener('blur', () => {
+                const newText = textEl.textContent.trim();
+                if (newText && newText !== textEl.getAttribute('data-original-text')) {
+                    updateTaskText(taskId, newText);
+                } else if (!newText) {
+                    textEl.textContent = textEl.getAttribute('data-original-text');
+                }
+                textEl.contentEditable = 'false';
+                textEl.classList.remove('editing');
+            });
+        }
+
+        const deleteBtn = item.querySelector('[data-action="delete"]');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => deleteDailyTask(taskId));
+        }
+    });
+}
+
+// HTML转义函数
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// 添加新任务
+function addDailyTask() {
+    const input = document.getElementById('newTaskInput');
+    const startTimeInput = document.getElementById('newTaskTime');
+    const endTimeInput = document.getElementById('newTaskEndTime');
+    const taskText = input.value.trim();
+
+    if (!taskText) return;
+
+    const storageKey = getTodayStorageKey();
+    chrome.storage.local.get([storageKey], (result) => {
+        const tasks = result[storageKey] || [];
+        const newTask = {
+            id: `task_${Date.now()}`,
+            text: taskText,
+            startTime: startTimeInput.value || null,
+            endTime: endTimeInput.value || null,
+            completed: false,
+            createdAt: Date.now()
+        };
+
+        tasks.push(newTask);
+
+        chrome.storage.local.set({ [storageKey]: tasks }, () => {
+            renderDailyTasks(tasks);
+            input.value = '';
+            startTimeInput.value = '';
+            endTimeInput.value = '';
+            input.focus();
+        });
+    });
+}
+
+// 切换任务完成状态
+function toggleTaskComplete(taskId) {
+    const storageKey = getTodayStorageKey();
+    chrome.storage.local.get([storageKey], (result) => {
+        const tasks = result[storageKey] || [];
+        const task = tasks.find(t => t.id === taskId);
+
+        if (task) {
+            task.completed = !task.completed;
+            chrome.storage.local.set({ [storageKey]: tasks }, () => {
+                renderDailyTasks(tasks);
+            });
+        }
+    });
+}
+
+// 更新任务文本
+function updateTaskText(taskId, newText) {
+    const storageKey = getTodayStorageKey();
+    chrome.storage.local.get([storageKey], (result) => {
+        const tasks = result[storageKey] || [];
+        const task = tasks.find(t => t.id === taskId);
+
+        if (task) {
+            task.text = newText;
+            chrome.storage.local.set({ [storageKey]: tasks }, () => {
+                renderDailyTasks(tasks);
+            });
+        }
+    });
+}
+
+// 更新任务时间
+function updateTaskTime(taskId, newStartTime, newEndTime) {
+    const storageKey = getTodayStorageKey();
+    chrome.storage.local.get([storageKey], (result) => {
+        const tasks = result[storageKey] || [];
+        const task = tasks.find(t => t.id === taskId);
+
+        if (task) {
+            task.startTime = newStartTime;
+            task.endTime = newEndTime || null;
+            chrome.storage.local.set({ [storageKey]: tasks }, () => {
+                renderDailyTasks(tasks);
+            });
+        }
+    });
+}
+
+// 删除每日任务
+function deleteDailyTask(taskId) {
+    const storageKey = getTodayStorageKey();
+    chrome.storage.local.get([storageKey], (result) => {
+        const tasks = result[storageKey] || [];
+        const filteredTasks = tasks.filter(t => t.id !== taskId);
+
+        chrome.storage.local.set({ [storageKey]: filteredTasks }, () => {
+            renderDailyTasks(filteredTasks);
+        });
+    });
+}
+
+// 初始化每日任务功能
+function initDailyTasks() {
+    const addTaskBtn = document.getElementById('addTaskBtn');
+    const newTaskInput = document.getElementById('newTaskInput');
+
+    if (addTaskBtn) {
+        addTaskBtn.addEventListener('click', addDailyTask);
+    }
+
+    if (newTaskInput) {
+        newTaskInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addDailyTask();
+            }
+        });
+    }
+
+    // 加载今天的任务
+    loadDailyTasks();
 }
 
 // 将时间字符串转换为分钟数（从00:00开始）
@@ -156,7 +467,7 @@ function highlightCurrentTask(forceScroll = false) {
             if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
                 item.classList.add('active');
                 // 只在初次加载或强制滚动时才滚动到高亮任务
-                if ((forceScroll || !hasScrolledToActive) && !isEditMode) {
+                if (forceScroll || !hasScrolledToActive) {
                     setTimeout(() => {
                         item.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         hasScrolledToActive = true;
@@ -186,288 +497,278 @@ window.addEventListener('beforeunload', () => {
     });
 });
 
-// 编辑模式管理
-let isEditMode = false;
-const originalContents = new Map(); // 保存原始内容
-
-function toggleEditMode() {
-    const editBtn = document.getElementById('editBtn');
-    const editBtnText = document.getElementById('editBtnText');
-    isEditMode = !isEditMode;
-
-    if (isEditMode) {
-        // 进入编辑模式
-        editBtn.classList.add('save-mode');
-        editBtnText.textContent = '保存';
-        editBtn.querySelector('span:first-child').textContent = '💾';
-
-        // 给所有卡片添加编辑模式类
-        document.querySelectorAll('.card').forEach(card => {
-            card.classList.add('editing');
-        });
-
-        // 让所有时间和活动内容可编辑
-        document.querySelectorAll('.time-item').forEach(item => {
-            const timeEl = item.querySelector('.time');
-            const activityEl = item.querySelector('.activity');
-
-            if (timeEl && activityEl) {
-                const startTime = item.getAttribute('data-start');
-                const endTime = item.getAttribute('data-end');
-
-                // 保存原始内容
-                originalContents.set(item, {
-                    startTime,
-                    endTime,
-                    activity: activityEl.innerHTML
-                });
-
-                // 设置可编辑
-                item.classList.add('editing');
-
-                // 创建时间选择器
-                const timeInputs = document.createElement('div');
-                timeInputs.className = 'time-inputs';
-                timeInputs.innerHTML = `
-                    <input type="time" class="start-time" value="${startTime}">
-                    <span class="time-separator">-</span>
-                    <input type="time" class="end-time" value="${endTime}">
-                `;
-                timeEl.replaceWith(timeInputs);
-
-                // 检查是否包含链接
-                const linkElement = activityEl.querySelector('a');
-                if (linkElement) {
-                    // 提取链接信息
-                    const linkUrl = linkElement.getAttribute('href');
-                    const linkText = linkElement.textContent;
-                    const beforeLink = activityEl.childNodes[0]?.textContent || '';
-                    const afterLink = activityEl.childNodes[activityEl.childNodes.length - 1]?.textContent || '';
-
-                    // 保存链接信息
-                    item.setAttribute('data-link-url', linkUrl);
-                    item.setAttribute('data-link-text', linkText);
-                    item.setAttribute('data-before-link', beforeLink);
-                    item.setAttribute('data-after-link', afterLink);
-
-                    // 创建链接编辑界面
-                    const linkEditContainer = document.createElement('div');
-                    linkEditContainer.className = 'link-edit-container';
-                    linkEditContainer.innerHTML = `
-                        <input type="text" class="activity-text" value="${activityEl.textContent}" placeholder="活动描述">
-                        <div class="link-edit-fields">
-                            <label class="link-label">链接名称:</label>
-                            <input type="text" class="link-text-input" value="${linkText}" placeholder="链接显示文字">
-                            <label class="link-label">链接地址:</label>
-                            <input type="url" class="link-url-input" value="${linkUrl}" placeholder="https://...">
-                        </div>
-                    `;
-
-                    activityEl.replaceWith(linkEditContainer);
-                } else {
-                    // 没有链接的普通活动内容可编辑
-                    activityEl.contentEditable = 'true';
-                }
-
-                // 添加删除按钮
-                if (!item.querySelector('.delete-btn')) {
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'delete-btn';
-                    deleteBtn.textContent = '删除';
-                    deleteBtn.onclick = () => deleteTask(item);
-                    item.appendChild(deleteBtn);
-                }
-            }
-        });
-
-        // 添加"新增任务"按钮
-        document.querySelectorAll('.card-content').forEach(content => {
-            if (!content.querySelector('.add-task-btn')) {
-                const addBtn = document.createElement('button');
-                addBtn.className = 'add-task-btn';
-                addBtn.textContent = '+ 新增任务';
-                addBtn.onclick = () => addNewTask(content);
-                content.appendChild(addBtn);
-            }
-        });
-    } else {
-        // 保存并退出编辑模式
-        editBtn.classList.remove('save-mode');
-        editBtnText.textContent = '编辑';
-        editBtn.querySelector('span:first-child').textContent = '✏️';
-
-        // 移除所有卡片的编辑模式类
-        document.querySelectorAll('.card').forEach(card => {
-            card.classList.remove('editing');
-        });
-
-        // 收集所有数据并保存
-        const allScheduleData = {};
-
+// 加载保存的日程数据
+function loadScheduleData() {
+    chrome.storage.local.get(['allScheduleData'], (result) => {
         document.querySelectorAll('.card').forEach(card => {
             const cardClass = card.className.split(' ').find(c => ['morning', 'noon', 'afternoon', 'evening'].includes(c));
-            const tasks = [];
+            const cardContent = card.querySelector('.card-content');
 
-            card.querySelectorAll('.time-item').forEach(item => {
-                const timeInputs = item.querySelector('.time-inputs');
-                let activityEl = item.querySelector('.activity');
-                const linkEditContainer = item.querySelector('.link-edit-container');
+            if (result.allScheduleData && result.allScheduleData[cardClass]) {
+                // 有保存的数据，清空并重建
+                cardContent.innerHTML = '';
 
-                let startTime, endTime;
+                // 按开始时间排序任务
+                const sortedTasks = [...result.allScheduleData[cardClass]].sort((a, b) => {
+                    return a.startTime.localeCompare(b.startTime);
+                });
 
-                if (timeInputs) {
-                    // 从时间选择器读取
-                    const startInput = timeInputs.querySelector('.start-time');
-                    const endInput = timeInputs.querySelector('.end-time');
-                    startTime = startInput ? startInput.value : '00:00';
-                    endTime = endInput ? endInput.value : '00:00';
+                // 添加排序后的任务
+                sortedTasks.forEach(task => {
+                    const newItem = createScheduleTaskItem(task, cardClass);
+                    cardContent.appendChild(newItem);
+                });
+            } else {
+                // 没有保存的数据，为HTML中的静态元素添加事件监听器
+                cardContent.querySelectorAll('.time-item').forEach(item => {
+                    const startTime = item.getAttribute('data-start');
+                    const endTime = item.getAttribute('data-end');
+                    const timeEl = item.querySelector('.time');
+                    const activityEl = item.querySelector('.activity');
 
-                    // 恢复为文本显示
-                    const timeText = startTime === endTime ? startTime : `${startTime} - ${endTime}`;
-                    const timeSpan = document.createElement('span');
-                    timeSpan.className = 'time';
-                    timeSpan.textContent = timeText;
-                    timeInputs.replaceWith(timeSpan);
-                } else {
-                    // 如果没有时间输入器，从 data 属性读取
-                    startTime = item.getAttribute('data-start') || '00:00';
-                    endTime = item.getAttribute('data-end') || '00:00';
-                }
+                    if (timeEl && activityEl && startTime && endTime) {
+                        // 添加editable类
+                        timeEl.classList.add('editable');
+                        activityEl.classList.add('editable');
 
-                // 处理链接编辑容器
-                if (linkEditContainer) {
-                    const activityTextInput = linkEditContainer.querySelector('.activity-text');
-                    const linkTextInput = linkEditContainer.querySelector('.link-text-input');
-                    const linkUrlInput = linkEditContainer.querySelector('.link-url-input');
+                        // 添加删除按钮（如果不存在）
+                        if (!item.querySelector('.schedule-task-delete')) {
+                            const deleteBtn = document.createElement('button');
+                            deleteBtn.className = 'schedule-task-delete';
+                            deleteBtn.title = '删除';
+                            deleteBtn.textContent = '×';
+                            deleteBtn.addEventListener('click', () => {
+                                deleteScheduleTask(item, cardClass);
+                            });
+                            item.appendChild(deleteBtn);
+                        }
 
-                    const activityText = activityTextInput ? activityTextInput.value : '';
-                    const linkText = linkTextInput ? linkTextInput.value : '';
-                    const linkUrl = linkUrlInput ? linkUrlInput.value : '';
+                        // 时间点击编辑
+                        timeEl.addEventListener('click', () => {
+                            editScheduleTaskTime(item, cardClass);
+                        });
 
-                    // 重新创建活动元素，包含更新后的链接
-                    const newActivityEl = document.createElement('span');
-                    newActivityEl.className = 'activity';
-
-                    // 解析活动文本，找到链接文本的位置并重新构建HTML
-                    const linkIndex = activityText.indexOf(linkText);
-                    if (linkIndex !== -1 && linkUrl && linkText) {
-                        const beforeLink = activityText.substring(0, linkIndex);
-                        const afterLink = activityText.substring(linkIndex + linkText.length);
-                        newActivityEl.innerHTML = `${beforeLink}<a href="${linkUrl}" target="_blank">${linkText}</a>${afterLink}`;
-                    } else {
-                        newActivityEl.textContent = activityText;
+                        // 活动双击编辑
+                        activityEl.addEventListener('dblclick', () => {
+                            editScheduleTaskActivity(item, cardClass);
+                        });
                     }
-
-                    linkEditContainer.replaceWith(newActivityEl);
-                    activityEl = newActivityEl;
-                }
-
-                if (activityEl) {
-                    tasks.push({
-                        startTime,
-                        endTime,
-                        activity: activityEl.innerHTML
-                    });
-
-                    // 更新 data 属性
-                    item.setAttribute('data-start', startTime);
-                    item.setAttribute('data-end', endTime);
-
-                    // 取消可编辑
-                    item.classList.remove('editing');
-                    activityEl.contentEditable = 'false';
-
-                    // 移除删除按钮
-                    const deleteBtn = item.querySelector('.delete-btn');
-                    if (deleteBtn) deleteBtn.remove();
-                }
-            });
-
-            allScheduleData[cardClass] = tasks;
+                });
+            }
         });
-
-        // 移除"新增任务"按钮
-        document.querySelectorAll('.add-task-btn').forEach(btn => btn.remove());
-
-        // 保存到 Chrome Storage
-        chrome.storage.local.set({ allScheduleData: allScheduleData }, () => {
-            console.log('日程已保存', allScheduleData);
-        });
-
-        originalContents.clear();
-    }
+    });
 }
 
-// 删除任务
-function deleteTask(item) {
-    if (confirm('确定要删除这个任务吗？')) {
-        item.remove();
-    }
-}
+// 创建日程表任务项元素
+function createScheduleTaskItem(task, cardClass) {
+    const timeText = task.startTime === task.endTime
+        ? task.startTime
+        : `${task.startTime} - ${task.endTime}`;
 
-// 添加新任务
-function addNewTask(cardContent) {
     const newItem = document.createElement('div');
-    newItem.className = 'time-item editing';
-    newItem.setAttribute('data-start', '09:00');
-    newItem.setAttribute('data-end', '10:00');
+    newItem.className = 'time-item';
+    newItem.setAttribute('data-start', task.startTime);
+    newItem.setAttribute('data-end', task.endTime);
     newItem.innerHTML = `
-        <div class="time-inputs">
-            <input type="time" class="start-time" value="09:00">
-            <span class="time-separator">-</span>
-            <input type="time" class="end-time" value="10:00">
-        </div>
-        <span class="activity" contenteditable="true">新任务</span>
-        <button class="delete-btn" onclick="this.parentElement.remove()">删除</button>
+        <span class="time editable">${timeText}</span>
+        <span class="activity editable">${task.activity}</span>
+        <button class="schedule-task-delete" title="删除">×</button>
     `;
 
-    // 在"新增任务"按钮前插入
-    const addBtn = cardContent.querySelector('.add-task-btn');
-    cardContent.insertBefore(newItem, addBtn);
+    // 时间点击编辑
+    const timeEl = newItem.querySelector('.time');
+    timeEl.addEventListener('click', () => {
+        editScheduleTaskTime(newItem, cardClass);
+    });
 
-    // 自动聚焦到活动输入框
+    // 活动双击编辑
     const activityEl = newItem.querySelector('.activity');
+    activityEl.addEventListener('dblclick', () => {
+        editScheduleTaskActivity(newItem, cardClass);
+    });
+
+    // 删除按钮
+    const deleteBtn = newItem.querySelector('.schedule-task-delete');
+    deleteBtn.addEventListener('click', () => {
+        deleteScheduleTask(newItem, cardClass);
+    });
+
+    return newItem;
+}
+
+// 编辑日程表任务时间
+function editScheduleTaskTime(item, cardClass) {
+    const timeEl = item.querySelector('.time');
+    const currentStartTime = item.getAttribute('data-start') || '09:00';
+    const currentEndTime = item.getAttribute('data-end') || '10:00';
+
+    // 创建时间编辑容器
+    const timeEditContainer = document.createElement('div');
+    timeEditContainer.style.display = 'flex';
+    timeEditContainer.style.gap = '4px';
+    timeEditContainer.style.alignItems = 'center';
+
+    const startInput = document.createElement('input');
+    startInput.type = 'time';
+    startInput.value = currentStartTime;
+    startInput.style.fontSize = '0.85em';
+    startInput.style.border = '1px solid #667eea';
+    startInput.style.borderRadius = '4px';
+    startInput.style.padding = '2px 4px';
+
+    const separator = document.createElement('span');
+    separator.textContent = '-';
+    separator.style.color = '#999';
+    separator.className = 'time-separator';
+
+    const endInput = document.createElement('input');
+    endInput.type = 'time';
+    endInput.value = currentEndTime;
+    endInput.style.fontSize = '0.85em';
+    endInput.style.border = '1px solid #667eea';
+    endInput.style.borderRadius = '4px';
+    endInput.style.padding = '2px 4px';
+
+    timeEditContainer.appendChild(startInput);
+    timeEditContainer.appendChild(separator);
+    timeEditContainer.appendChild(endInput);
+
+    const saveTime = () => {
+        const newStartTime = startInput.value || currentStartTime;
+        const newEndTime = endInput.value || currentEndTime;
+
+        // 更新显示
+        const timeText = newStartTime === newEndTime ? newStartTime : `${newStartTime} - ${newEndTime}`;
+        timeEl.textContent = timeText;
+
+        // 更新数据属性
+        item.setAttribute('data-start', newStartTime);
+        item.setAttribute('data-end', newEndTime);
+
+        // 恢复时间显示
+        timeEl.style.display = '';
+        timeEditContainer.remove();
+
+        // 保存到存储
+        saveScheduleData(cardClass);
+    };
+
+    startInput.addEventListener('blur', (e) => {
+        if (!timeEditContainer.contains(e.relatedTarget)) {
+            setTimeout(saveTime, 100);
+        }
+    });
+
+    endInput.addEventListener('blur', (e) => {
+        if (!timeEditContainer.contains(e.relatedTarget)) {
+            setTimeout(saveTime, 100);
+        }
+    });
+
+    startInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            endInput.focus();
+        }
+        if (e.key === 'Escape') {
+            timeEl.style.display = '';
+            timeEditContainer.remove();
+        }
+    });
+
+    endInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            saveTime();
+        }
+        if (e.key === 'Escape') {
+            timeEl.style.display = '';
+            timeEditContainer.remove();
+        }
+    });
+
+    timeEl.style.display = 'none';
+    timeEl.parentNode.insertBefore(timeEditContainer, timeEl);
+    startInput.focus();
+}
+
+// 编辑日程表任务活动
+function editScheduleTaskActivity(item, cardClass) {
+    const activityEl = item.querySelector('.activity');
+    const originalContent = activityEl.innerHTML;
+
+    activityEl.contentEditable = 'true';
+    activityEl.classList.add('editing');
     activityEl.focus();
+
     // 选中所有文本
     const range = document.createRange();
     range.selectNodeContents(activityEl);
     const sel = window.getSelection();
     sel.removeAllRanges();
     sel.addRange(range);
+
+    const saveActivity = () => {
+        const newContent = activityEl.innerHTML.trim();
+        if (!newContent) {
+            activityEl.innerHTML = originalContent;
+        }
+        activityEl.contentEditable = 'false';
+        activityEl.classList.remove('editing');
+
+        // 保存到存储
+        saveScheduleData(cardClass);
+    };
+
+    activityEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            activityEl.blur();
+        }
+        if (e.key === 'Escape') {
+            activityEl.innerHTML = originalContent;
+            activityEl.blur();
+        }
+    });
+
+    activityEl.addEventListener('blur', saveActivity, { once: true });
 }
 
-// 加载保存的日程数据
-function loadScheduleData() {
+// 删除日程表任务
+function deleteScheduleTask(item, cardClass) {
+    if (confirm('确定要删除这个任务吗？')) {
+        item.remove();
+        saveScheduleData(cardClass);
+    }
+}
+
+// 保存日程表数据
+function saveScheduleData(cardClass) {
     chrome.storage.local.get(['allScheduleData'], (result) => {
-        if (result.allScheduleData) {
-            // 清空并重建所有任务
-            document.querySelectorAll('.card').forEach(card => {
-                const cardClass = card.className.split(' ').find(c => ['morning', 'noon', 'afternoon', 'evening'].includes(c));
-                const cardContent = card.querySelector('.card-content');
+        const allScheduleData = result.allScheduleData || {};
 
-                if (result.allScheduleData[cardClass]) {
-                    // 清空现有内容
-                    cardContent.innerHTML = '';
+        // 获取该卡片的所有任务
+        const card = document.querySelector(`.card.${cardClass}`);
+        if (!card) return;
 
-                    // 添加保存的任务
-                    result.allScheduleData[cardClass].forEach(task => {
-                        const timeText = task.startTime === task.endTime
-                            ? task.startTime
-                            : `${task.startTime} - ${task.endTime}`;
+        const tasks = [];
+        card.querySelectorAll('.time-item').forEach(item => {
+            const startTime = item.getAttribute('data-start');
+            const endTime = item.getAttribute('data-end');
+            const activityEl = item.querySelector('.activity');
 
-                        const newItem = document.createElement('div');
-                        newItem.className = 'time-item';
-                        newItem.setAttribute('data-start', task.startTime);
-                        newItem.setAttribute('data-end', task.endTime);
-                        newItem.innerHTML = `
-                            <span class="time">${timeText}</span>
-                            <span class="activity">${task.activity}</span>
-                        `;
-                        cardContent.appendChild(newItem);
-                    });
-                }
-            });
-        }
+            if (startTime && endTime && activityEl) {
+                tasks.push({
+                    startTime,
+                    endTime,
+                    activity: activityEl.innerHTML
+                });
+            }
+        });
+
+        allScheduleData[cardClass] = tasks;
+
+        chrome.storage.local.set({ allScheduleData }, () => {
+            console.log('日程已保存', allScheduleData);
+        });
     });
 }
 
@@ -520,6 +821,10 @@ function initTabs() {
                 document.getElementById('todayTab').classList.add('active');
             } else if (targetTab === 'schedule') {
                 document.getElementById('scheduleTab').classList.add('active');
+            } else if (targetTab === 'history') {
+                document.getElementById('historyTab').classList.add('active');
+                // 切换到历史标签时加载数据
+                loadHistoryData();
             }
         });
     });
@@ -538,8 +843,8 @@ showDailyQuote();
 // 初始化标签切换
 initTabs();
 
-// 绑定编辑按钮事件
-document.getElementById('editBtn').addEventListener('click', toggleEditMode);
+// 初始化每日任务
+initDailyTasks();
 
 // ============ 番茄钟倒计时功能 ============
 let pomodoroTimer = null;
@@ -747,3 +1052,247 @@ if ('Notification' in window && Notification.permission === 'default') {
 
 // 初始化番茄钟显示
 updatePomodoroDisplay();
+
+// ==================== 历史任务功能 ====================
+
+let currentFilter = 'week'; // 当前过滤器: week, month, all
+
+// 初始化历史任务功能
+function initHistory() {
+    // 绑定过滤按钮事件
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            currentFilter = btn.getAttribute('data-filter');
+
+            // 更新按钮状态
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // 重新加载历史数据
+            loadHistoryData();
+        });
+    });
+}
+
+// 获取所有历史任务数据
+function loadHistoryData() {
+    chrome.storage.local.get(null, (result) => {
+        const historyData = [];
+        const today = getTodayDateString();
+
+        // 遍历所有存储的键，找出所有dailyTasks_开头的
+        for (const key in result) {
+            if (key.startsWith('dailyTasks_')) {
+                const dateStr = key.replace('dailyTasks_', '');
+                const tasks = result[key] || [];
+
+                if (tasks.length > 0) {
+                    historyData.push({
+                        date: dateStr,
+                        tasks: tasks
+                    });
+                }
+            }
+        }
+
+        // 按日期降序排序（最新的在前）
+        historyData.sort((a, b) => b.date.localeCompare(a.date));
+
+        // 根据当前过滤器过滤数据
+        const filteredData = filterHistoryData(historyData);
+
+        // 计算统计信息
+        updateStatistics(filteredData);
+
+        // 渲染历史列表
+        renderHistoryList(filteredData);
+    });
+}
+
+// 根据过滤器过滤历史数据
+function filterHistoryData(historyData) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    if (currentFilter === 'all') {
+        return historyData;
+    } else if (currentFilter === 'week') {
+        // 本周（从周一开始）
+        const dayOfWeek = today.getDay();
+        const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - mondayOffset);
+
+        return historyData.filter(item => {
+            const itemDate = new Date(item.date);
+            return itemDate >= monday;
+        });
+    } else if (currentFilter === 'month') {
+        // 本月
+        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+        return historyData.filter(item => {
+            const itemDate = new Date(item.date);
+            return itemDate >= firstDayOfMonth;
+        });
+    }
+
+    return historyData;
+}
+
+// 更新统计信息
+function updateStatistics(historyData) {
+    let totalTasks = 0;
+    let completedTasks = 0;
+
+    historyData.forEach(day => {
+        totalTasks += day.tasks.length;
+        completedTasks += day.tasks.filter(task => task.completed).length;
+    });
+
+    // 更新UI
+    document.getElementById('totalDays').textContent = historyData.length;
+    document.getElementById('totalTasks').textContent = totalTasks;
+    document.getElementById('completedTasks').textContent = completedTasks;
+}
+
+// 渲染历史任务列表
+function renderHistoryList(historyData) {
+    const historyList = document.getElementById('historyList');
+
+    if (historyData.length === 0) {
+        historyList.innerHTML = `
+            <div class="no-history">
+                <div class="no-history-icon">📭</div>
+                <div>暂无历史任务数据</div>
+            </div>
+        `;
+        return;
+    }
+
+    const today = getTodayDateString();
+    const yesterday = getYesterdayDateString();
+
+    historyList.innerHTML = historyData.map((day, index) => {
+        const totalTasks = day.tasks.length;
+        const completedTasks = day.tasks.filter(task => task.completed).length;
+        const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+        // 确定完成率等级
+        let rateClass = '';
+        if (completionRate >= 80) {
+            rateClass = 'high';
+        } else if (completionRate >= 50) {
+            rateClass = 'medium';
+        } else {
+            rateClass = 'low';
+        }
+
+        // 日期显示
+        let dateLabel = formatDate(day.date);
+        let dateClass = '';
+        if (day.date === today) {
+            dateLabel = `今天 (${dateLabel})`;
+            dateClass = 'today';
+        } else if (day.date === yesterday) {
+            dateLabel = `昨天 (${dateLabel})`;
+            dateClass = 'yesterday';
+        }
+
+        // 生成任务详情HTML
+        const tasksDetailHTML = day.tasks.map(task => {
+            const timeDisplay = task.startTime
+                ? (task.endTime && task.endTime !== task.startTime
+                    ? `${task.startTime}-${task.endTime}`
+                    : task.startTime)
+                : '';
+
+            return `
+                <div class="history-task-item ${task.completed ? 'completed' : ''}">
+                    <div class="history-task-checkbox ${task.completed ? 'completed' : ''}"></div>
+                    ${timeDisplay ? `<div class="history-task-time">${timeDisplay}</div>` : ''}
+                    <div class="history-task-text">${escapeHtml(task.text)}</div>
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div class="history-day-card" data-index="${index}">
+                <div class="history-day-header">
+                    <div class="history-date ${dateClass}">${dateLabel}</div>
+                    <div class="history-completion">
+                        <span class="completion-badge ${rateClass}">${completionRate}%</span>
+                    </div>
+                </div>
+
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill ${rateClass}" style="width: ${completionRate}%"></div>
+                </div>
+
+                <div class="history-tasks-summary">
+                    <div class="task-count">
+                        <span class="task-count-icon">📝</span>
+                        <span>总计 ${totalTasks}</span>
+                    </div>
+                    <div class="task-count">
+                        <span class="task-count-icon">✅</span>
+                        <span>完成 ${completedTasks}</span>
+                    </div>
+                    <div class="task-count">
+                        <span class="task-count-icon">⏱️</span>
+                        <span>剩余 ${totalTasks - completedTasks}</span>
+                    </div>
+                </div>
+
+                <button class="expand-btn" onclick="toggleHistoryDetail(${index})">
+                    查看详情 ▼
+                </button>
+
+                <div class="history-tasks-detail">
+                    ${tasksDetailHTML}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// 切换历史详情展开/收起
+function toggleHistoryDetail(index) {
+    const card = document.querySelector(`.history-day-card[data-index="${index}"]`);
+    const btn = card.querySelector('.expand-btn');
+
+    if (card.classList.contains('expanded')) {
+        card.classList.remove('expanded');
+        btn.textContent = '查看详情 ▼';
+    } else {
+        card.classList.add('expanded');
+        btn.textContent = '收起详情 ▲';
+    }
+}
+
+// 格式化日期显示
+function formatDate(dateStr) {
+    const date = new Date(dateStr);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+    const weekDay = weekDays[date.getDay()];
+
+    return `${month}月${day}日 ${weekDay}`;
+}
+
+// 获取昨天的日期字符串
+function getYesterdayDateString() {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const year = yesterday.getFullYear();
+    const month = String(yesterday.getMonth() + 1).padStart(2, '0');
+    const day = String(yesterday.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// 初始化历史任务功能
+initHistory();
+
+// 将toggleHistoryDetail设为全局函数，以便HTML中的onclick可以调用
+window.toggleHistoryDetail = toggleHistoryDetail;
