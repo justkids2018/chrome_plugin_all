@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2026-01-10T00:00:00Z",
+  "totalReviews": 0,
+  "reviewScores": {
+    "average": 0,
+    "trend": "N/A",
+    "history": []
+  },
+  "topIssues": [],
+  "skillOptimizations": {
+    "total": 0,
+    "thisMonth": 0,
+    "bySkill": {
+      "requirement-clarification": 0,
+      "architecture-design": 0,
+      "ui-design-system": 0,
+      "code-implementation": 0,
+      "code-review": 0
+    }
+  },
+  "issueFrequency": {
+    "missing-error-handling": {
+      "count": 0,
+      "lastOptimized": null,
+      "status": "baseline"
+    },
+    "repeated-code": {
+      "count": 0,
+      "lastOptimized": null,
+      "status": "baseline"
+    },
+    "missing-tests": {
+      "count": 0,
+      "lastOptimized": null,
+      "status": "baseline"
+    },
+    "security-issues": {
+      "count": 0,
+      "lastOptimized": null,
+      "status": "baseline"
+    },
+    "performance-issues": {
+      "count": 0,
+      "lastOptimized": null,
+      "status": "baseline"
+    }
+  },
+  "notes": "This file tracks the effectiveness of skill optimizations. Updated automatically by skill-learner agent."
+}

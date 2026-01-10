@@ -1,0 +1,61 @@
+# Claude Code - Local Settings
+.claude/settings.local.json
+.claude/CLAUDE.local.md
+
+# Workflow State (optional - commit if you want to share state)
+.claude/workflow-state.json
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Node modules (if using npm for any tooling)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# Chrome Extension (packed files)
+*.crx
+*.pem
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Logs
+logs/
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Operating System Files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Optional: Workflow artifacts (if you don't want to commit docs)
+# docs/requirements/
+# docs/architecture/
+# docs/design/
+# docs/reviews/
+# docs/learnings/
